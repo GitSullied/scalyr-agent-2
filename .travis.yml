@@ -7,14 +7,44 @@ python:
 
 # Command to install dependancies
 install: 
-  - pip install .
+  # Build/test requirements
   - pip install -r requirements.txt
 
+  # Install module from VCS local directory
+  - pip install -e .
+
+before_script:
+  # Allow us to SSH passwordless to localhost
+  - ssh-keygen -f ~/.ssh/scalyr_id_rsa -N ""
+  - cp ~/.ssh/{scalyr_id_rsa.pub,authorized_keys}
+
+  # Enable SSH Agent forwarding
+  - eval $(ssh-agent)
+  - ssh-add
+
+
 # Command to run tests
-script: python run_tests.py
-#
-# A more common way to initiate tests would be one of the 
-# following.  We'll discuss and migrate to these mechanisms
-# at some point in the future.
-#script: nosetests
-#script: python setup.py test
+script: 
+  - python run_tests.py
+  #
+  # More common ways to accomplish this...
+  #- python setup.py test
+  #- nosetests
+  #- py.test
+  # ... 
+  #- fab test
+  #- fab -H localhost test:"--tests\=integration"
+  #
+  # Build docs; first without warnings to generate innersphinx files
+  #- invoke www
+  #- invoke docs -o -W
+  #- invoke www -c -o -W
+ 
+notifications:
+  irc:
+    channels: "irc.freenode.org#scalyr"
+    template:
+      - "%{repository}@{branch}: %{message} (%{build_url})"
+    on_success: change
+    on_failure: change
+  email: True
