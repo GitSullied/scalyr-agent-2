@@ -1,0 +1,9 @@
+# ============================================================================
+# PYTHON PACKAGE REQUIREMENTS FOR: Scalyr Agent -- For development only
+# ============================================================================
+
+# -- OPTIONAL: For JSON validation
+# REQUIRES: python >= 2.6
+jsonschema >= 1.3.0
+ipython >= 2.2.0
+ipdb

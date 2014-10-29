@@ -1,0 +1,18 @@
+# ============================================================================
+# Scalyr Agent: PYTHON PACKAGE REQUIREMENTS: All requirements
+# ============================================================================
+# DESCRIPTION:
+#    pip install -r <THIS_FILE>
+#
+# SEE ALSO:
+#  * https://github.com/yyuu/pyenv-installer
+#  * http://www.pip-installer.org/
+# ============================================================================
+
+-r basic.txt
+-r testing.txt
+-r develop.txt
+-r docs.txt
+-r more_py25.txt
+-r more_py26.txt
+-r json.txt

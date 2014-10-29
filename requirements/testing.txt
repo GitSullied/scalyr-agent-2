@@ -1,0 +1,8 @@
+# ============================================================================
+# PYTHON PACKAGE REQUIREMENTS FOR: Scalyr Agent -- For testing only
+# ============================================================================
+
+# -- TESTING: Specification and regression tests for Scalyr Agent
+nose  >= 1.1
+mock  >= 1.0
+PyHamcrest >= 1.8

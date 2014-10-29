@@ -1,0 +1,6 @@
+# ============================================================================
+# Scalyr Agent: PYTHON PACKAGE REQUIREMENTS: More packages for Python2.6
+# ============================================================================
+
+ordereddict
+importlib
