@@ -17,9 +17,36 @@
 
 __author__ = 'guy.hoozdis@gmail.com'
 
-from scalyr_agent.platform_controller import PlatformController
+import sys
+
+from scalyr_agent.platform_controller import PlatformController, DefaultPaths
+
+from __scalyr__ import get_install_root
+
 
 class WindowsPlatformController(PlatformController):
     """A controller instance for Microsoft's Windows platforms
     """
-    pass
+
+    def can_handle_current_platform(self):
+        """Returns true if this platform object can handle the server this process is running on.
+
+        @return: True if this platform instance can handle the current server.
+        @rtype: bool
+        """
+        return 'win32' == sys.platform
+
+    @property
+    def default_paths(self):
+        """Returns the default paths to use for various configuration options for this platform.
+
+        @return: The default paths
+        @rtype: DefaultPaths
+        """
+        # NOTE: For this module, it is assumed that the 'install_type' is always PACKAGE_INSTALL
+        # TODO: These are not ideal paths, just something to get us started.
+        return DefaultPaths(
+                r'\Temp\scalyr\log',
+                r'\Temp\scalyr\agent.json',
+                r'\Temp\scalyr\lib')
+
