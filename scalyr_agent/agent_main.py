@@ -905,9 +905,8 @@ class WorkerThread(object):
         log.debug('Shutting client')
         self.__scalyr_client.close()
 
-if __name__ == '__main__':
-    my_controller = PlatformController.new_platform()
 
+def create_commandline_parser():
     parser = OptionParser(usage='Usage: scalyr-agent-2 [options] (start|stop|status|restart|condrestart|version)',
                           version='scalyr-agent v' + SCALYR_VERSION)
     parser.add_option("-c", "--config-file", dest="config_filename",
@@ -922,6 +921,28 @@ if __name__ == '__main__':
                       help="Forces agent to not change which user is executing agent.  Requires the right user is "
                            "already being used.  This is used internally to prevent infinite loops in changing to"
                            "the correct user.  Users should not need to set this option.")
+    return parser
+
+
+
+if __name__ == '__main__':
+    my_controller = PlatformController.new_platform()
+
+    #parser = OptionParser(usage='Usage: scalyr-agent-2 [options] (start|stop|status|restart|condrestart|version)',
+    #                      version='scalyr-agent v' + SCALYR_VERSION)
+    #parser.add_option("-c", "--config-file", dest="config_filename",
+    #                  help="Read configuration from FILE", metavar="FILE")
+    #parser.add_option("-q", "--quiet", action="store_true", dest="quiet", default=False,
+    #                  help="Only print error messages when running the start, stop, and condrestart commands")
+    #parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    #                  help="For status command, prints detailed information about running agent.")
+    #parser.add_option("", "--no-fork", action="store_true", dest="no_fork", default=False,
+    #                  help="For the run command, does not fork the program to the background.")
+    #parser.add_option("", "--no-change-user", action="store_true", dest="no_change_user", default=False,
+    #                  help="Forces agent to not change which user is executing agent.  Requires the right user is "
+    #                       "already being used.  This is used internally to prevent infinite loops in changing to"
+    #                       "the correct user.  Users should not need to set this option.")
+    parser = create_parser()
     my_controller.add_options(parser)
 
     (options, args) = parser.parse_args()
