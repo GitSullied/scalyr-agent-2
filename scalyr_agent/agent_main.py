@@ -942,7 +942,7 @@ if __name__ == '__main__':
     #                  help="Forces agent to not change which user is executing agent.  Requires the right user is "
     #                       "already being used.  This is used internally to prevent infinite loops in changing to"
     #                       "the correct user.  Users should not need to set this option.")
-    parser = create_parser()
+    parser = create_commandline_parser()
     my_controller.add_options(parser)
 
     (options, args) = parser.parse_args()
