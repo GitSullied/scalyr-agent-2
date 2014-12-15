@@ -50,3 +50,25 @@ class WindowsPlatformController(PlatformController):
                 r'\Temp\scalyr\agent.json',
                 r'\Temp\scalyr\lib')
 
+    def run_as_user(self, user_id, script_file, script_arguments):
+        print "** run_as_user **"
+        print "user_id", user_id
+        print "script_file", script_file
+        print "script_arguments", script_arguments
+        print "**** run_as_user **"
+
+    def is_agent_running(self, fail_if_running=False):
+        print "** is_agent_running **"
+        print "fail_if_running", fail_if_running
+        print "**** is_agent_running **"
+
+    def start_agent_service(self, agent_run_method, quiet):
+        print "** start_agent_service **"
+        print "agent_run_method", agent_run_method
+        print "quiet", quiet
+        print "**** is_agent_running **"
+
+    def stop_agent_service(self, quiet):
+        print "** stop_agent_service **"
+        print "quiet", quiet
+        print "**** stop_agent_service **"
