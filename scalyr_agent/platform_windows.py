@@ -17,6 +17,14 @@
 
 __author__ = 'guy.hoozdis@gmail.com'
 
+# TODO:
+#  * Control flow (agent_run_method returns => stop service)
+#  X register_for_termination() - test the code Steven and I wrote
+#  * register_for_status_request() - imitate the termination handler example
+#  * request_agent_status() - controller method required for register_for_status_request()
+#  * stop_agent_service() - implement real code
+#  * start_agent_service() - implement real code
+
 import sys
 
 try:
@@ -62,8 +70,10 @@ class ScalyrService(win32serviceutil.ServiceFramework):
     def SvcStop(self):
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         self.log('Stopping scalyr service')
-        #self.running = False
         win32event.SetEvent(self._stop_event)
+
+        self.log('Invoking termination handler')
+        self.controller.invoke_termination_handler()
         self.log('Stopped scalyr service')
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
 
@@ -85,15 +95,16 @@ class ScalyrService(win32serviceutil.ServiceFramework):
         from scalyr_agent.agent_main import ScalyrAgent, create_commandline_parser
         from scalyr_agent.platform_controller import PlatformController
 
-        controller = PlatformController.new_platform()
+        self.controller = PlatformController.new_platform()
         parser = create_commandline_parser()
-        controller.add_options(parser)
+        self.controller.add_options(parser)
         options, args = parser.parse_args(['start'])
-        controller.consume_options(options)
+        self.controller.consume_options(options)
 
+        #controller.register_termination_handler(self.SvcStop)
         self.log("Calling agent_run_method()")
-        agent = ScalyrAgent(controller)
-        agent.agent_run_method(controller, options.config_filename)
+        agent = ScalyrAgent(self.controller)
+        agent.agent_run_method(self.controller, options.config_filename)
         self.log("Exiting agent_run_method()")
 
 
@@ -101,6 +112,14 @@ class ScalyrService(win32serviceutil.ServiceFramework):
 class WindowsPlatformController(PlatformController):
     """A controller instance for Microsoft's Windows platforms
     """
+
+    def invoke_termination_handler(self):
+        if self.__termination_handler:
+            self.__termination_handler()
+
+    def invoke_status_handler(self):
+        # TODO: Determine the code path in ScalyrService that will invoke this method
+        pass
 
     def can_handle_current_platform(self):
         """Returns true if this platform object can handle the server this process is running on.
@@ -202,6 +221,28 @@ class WindowsPlatformController(PlatformController):
         CPU seconds spent in user land, the second is the number of CPU seconds spent in system land,
         and the third is the current resident size of the process in bytes."""
         return (0, 0, 0)
+
+    def register_for_termination(self, handler):
+        """Register a method to be invoked if the agent service is requested to terminated.
+
+        This should only be invoked by the agent service once it has begun to run.
+
+        @param handler: The method to invoke when termination is requested.
+        @type handler:  func
+        """
+        self.__termination_handler = handler
+
+    def register_for_status_requests(self, handler):
+        """Register a method to be invoked if this process is requested to report its status.
+
+        This is used to implement the 'scalyr-agent-2 status -v' feature.
+
+        This should only be invoked by the agent service once it has begun to run.
+
+        @param handler:  The method to invoke when status is requested.
+        @type handler: func
+        """
+        self.__status_handler = handler
 
 
 
