@@ -72,7 +72,7 @@ class ScalyrService(win32serviceutil.ServiceFramework):
         try:
             self.ReportServiceStatus(win32service.SERVICE_RUNNING)
             self.log('Starting service')
-            #self.start()
+            self.start()
             self.log('Waiting for stop event')
             win32event.WaitForSingleObject(self._stop_event, win32event.INFINITE)
             self.log('Done waiting')
@@ -80,11 +80,22 @@ class ScalyrService(win32serviceutil.ServiceFramework):
             self.log('ERROR: {}'.format(e))
             self.SvcStop()
 
-    #def start(self):
-    #    self.running = True
-    #    while self.running:
-    #        self.sleep(10)
-    #        self.log('Scalyr Service runloop...')
+    def start(self):
+        self.log("Importing ScalyrAgent from agent_main")
+        from scalyr_agent.agent_main import ScalyrAgent, create_commandline_parser
+        from scalyr_agent.platform_controller import PlatformController
+
+        controller = PlatformController.new_platform()
+        parser = create_commandline_parser()
+        controller.add_options(parser)
+        options, args = parser.parse_args(['start'])
+        controller.consume_options(options)
+
+        self.log("Calling agent_run_method()")
+        agent = ScalyrAgent(controller)
+        agent.agent_run_method(controller, options.config_filename)
+        self.log("Exiting agent_run_method()")
+
 
 
 class WindowsPlatformController(PlatformController):
@@ -183,6 +194,15 @@ class WindowsPlatformController(PlatformController):
         print "** stop_agent_service **"
         print "quiet", quiet
         print "**** stop_agent_service **"
+
+    def get_usage_info(self):
+        """Returns CPU and memory usage information.
+
+        It returns the results in a tuple, with the first element being the number of
+        CPU seconds spent in user land, the second is the number of CPU seconds spent in system land,
+        and the third is the current resident size of the process in bytes."""
+        return (0, 0, 0)
+
 
 
 if __name__ == "__main__":
