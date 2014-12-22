@@ -19,12 +19,6 @@ __author__ = 'guy.hoozdis@gmail.com'
 
 # TODO:
 #  * Control flow (agent_run_method returns => stop service)
-#  X register_for_termination() - test the code Steven and I wrote
-#  X register_for_status_request() - imitate the termination handler example
-#  X request_agent_status() - controller method required for register_for_status_request()
-#  X stop_agent_service() - implement real code
-#  X start_agent_service() - implement real code
-
 import sys
 
 try:
@@ -43,6 +37,7 @@ except ImportError:
     from scalyr_agent.platform_controller import PlatformController, DefaultPaths, AgentAlreadyRunning
 
 from __scalyr__ import get_install_root
+from scalyr_agent.json_lib import JsonObject
 
 import win32serviceutil
 import win32service
@@ -69,11 +64,11 @@ class ScalyrService(win32serviceutil.ServiceFramework):
     _svc_display_name_ = "Scalyr Agent"
     _svc_description_ = "Hosts Scalyr metric collectors"
 
-    SERVICE_CONTROL_SCALYR = 16
+    # Custom/user defined control messages
+    SERVICE_CONTROL_DETAILED_REPORT = win32service.SERVICE_USER_DEFINED_CONTROL - 1 
 
     def __init__(self, *args):
         win32serviceutil.ServiceFramework.__init__(self, *args)
-        self.log('Instantiate scalyr service')
         self._stop_event = win32event.CreateEvent(None, 0, 0, None)
 
     def log(self, msg):
@@ -88,7 +83,6 @@ class ScalyrService(win32serviceutil.ServiceFramework):
         win32event.SetEvent(self._stop_event)
         self.controller.invoke_termination_handler()
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
-        self.log('Stopped scalyr service')
 
     def SvcDoRun(self):
         self.ReportServiceStatus(win32service.SERVICE_START_PENDING)
@@ -120,14 +114,10 @@ class ScalyrService(win32serviceutil.ServiceFramework):
 
     def SvcOther(self, control):
         self.log('SvcOther (control=%d)' % control)
-        if 128 == control:
-            self.log('invoking status handler')
+        if ScalyrService.SERVICE_CONTROL_DETAILED_REPORT == control:
             self.controller.invoke_status_handler()
-            self.log('status handler invoked')
         else:
-            self.log('propigating control code=%d' % control)
             win32serviceutil.ServiceFramework.SvcOther(self, control)
-        self.log('Exiting SvcOther')
     
 class WindowsPlatformController(PlatformController):
     """A controller instance for Microsoft's Windows platforms
@@ -162,6 +152,31 @@ class WindowsPlatformController(PlatformController):
                 r'\Temp\scalyr\log',
                 r'\Temp\scalyr\agent.json',
                 r'\Temp\scalyr\lib')
+
+    @property
+    def default_monitors(self):
+        """Returns the default monitors to use for this platform.
+
+        This is guaranteed to be invoked after consume_config is called to allow implementations to make what they
+        return be dependent on configuration options.
+
+        This method should list of dicts containing monitor configuration options just as you would specify them in
+        the configuration file.  The list may be empty.
+
+        @return: The default monitors
+        @rtype: list<dict>
+        """
+        monitors = [
+            JsonObject(
+                module='scalyr_agent.builtin_monitors.windows_system_metrics'
+            ),
+            JsonObject(
+                module='scalyr_agent.builtin_monitors.windows_process_metrics',
+                pid='$$',
+                id='agent'
+            ),
+        ]
+        return monitors
 
     def run_as_user(self, user_id, script_file, script_arguments):
         """Restarts this process with the same arguments as the specified user.
@@ -242,7 +257,10 @@ class WindowsPlatformController(PlatformController):
         CPU seconds spent in user land, the second is the number of CPU seconds spent in system land,
         and the third is the current resident size of the process in bytes."""
         # TODO: Implement the data structure (cpu, sys, phy_ram)
-        return (0, 0, 0)
+        cpu_usage = psutil.cpu_times()
+        user_cpu = cpu_usage.user
+        system_cpu = cpu_usage.system
+        return (user_cpu, system_cpu, 0)
 
     def register_for_termination(self, handler):
         """Register a method to be invoked if the agent service is requested to terminated.
@@ -275,7 +293,7 @@ class WindowsPlatformController(PlatformController):
         @return: If there is an error, an errno that describes the error.  errno.EPERM indicates the current does not
             have permission to request the status.  errno.ESRCH indicates the agent is not running.
         """
-        win32serviceutil.ControlService(ScalyrService._svc_name_, 128)
+        win32serviceutil.ControlService(ScalyrService._svc_name_, ScalyrService.SERVICE_CONTROL_DETAILED_REPORT)
 
 
 if __name__ == "__main__":
